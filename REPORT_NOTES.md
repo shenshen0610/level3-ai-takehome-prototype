@@ -76,7 +76,7 @@ The following assumptions should be included clearly in the final report:
 
 4. Mission control currently uses a deterministic fallback.
 
-   The mission control component currently uses a lightweight rule-based parser to convert natural language instructions into structured actions such as `detect_object/person` or `detect_object/bus`. This was chosen for reliability and speed in the toy prototype. The architecture keeps this component isolated so it can be replaced with an API-based LLM or a small local model on the Raspberry Pi.
+   The mission control component includes an API-based parser path and a deterministic fallback parser. The validated runs used the fallback parser, which converts natural language instructions into structured actions such as `detect_object/person` or `detect_object/bus`. This was chosen for reliability and speed in the toy prototype. The architecture keeps this component isolated so it can be replaced with an API-based LLM or a small local model on the Raspberry Pi.
 
 5. The demo focuses on the end-to-end integration contract.
 
@@ -84,7 +84,22 @@ The following assumptions should be included clearly in the final report:
 
 Suggested report wording:
 
-> For this prototype, I made a few practical assumptions to keep the scope focused on the end-to-end integration. I simulated the Raspberry Pi as a local FastAPI service and represented the Open Claw boundary with a lightweight API adapter. The adapter accepts a natural language instruction and sends it to the Raspberry Pi service over HTTP, preserving the same communication pattern that could later be used with a real Open Claw API, webhook, or skill interface. The vision model path is real: YOLOv8n runs on local sample images and returns object detections. Mission control currently uses a deterministic parser for reliability, with a clear replacement path for an API-based LLM or lightweight local model on a physical Raspberry Pi.
+> For this prototype, I made a few practical assumptions to keep the scope focused on the end-to-end integration. I simulated the Raspberry Pi as a local FastAPI service and represented the Open Claw boundary with a lightweight API adapter. The adapter accepts a natural language instruction and sends it to the Raspberry Pi service over HTTP, preserving the same communication pattern that could later be used with a real Open Claw API, webhook, or skill interface. The vision model path is real: YOLOv8n runs on local sample images and returns object detections. Mission control includes an API-based parser path with a deterministic fallback; the validated runs use the fallback for reliability, and the API path can be enabled when model access and quota are available.
+
+## Mission Control API Attempt
+
+The code includes an API-based mission control path in `mission_control.py`. During testing, the API key was recognized, but the API returned an `insufficient_quota` response:
+
+```text
+Error code: 429
+code: insufficient_quota
+```
+
+The system handled this gracefully by falling back to the deterministic parser and recording the fallback reason in `mission_plan.notes`. This is a useful reliability behavior: the demo still completes the full task loop even when the external mission-control API is unavailable.
+
+Suggested report wording:
+
+> Mission control includes an API-based parsing path as well as a deterministic fallback. During validation, the API request returned an account quota error, so the system automatically used the fallback parser and recorded the reason in the response. This kept the end-to-end task execution stable while preserving a clear replacement path for an API-based or local lightweight mission model.
 
 ## Additional Demo Evidence
 

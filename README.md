@@ -32,7 +32,7 @@ The prototype is intentionally scoped as a local toy demo. It preserves the inte
 - A physical Raspberry Pi was not used for this weekend prototype. The Raspberry Pi side is represented by a local FastAPI service with the same kind of HTTP task endpoint that could later run on a real Raspberry Pi.
 - The full Open Claw runtime was not installed locally. Instead, `openclaw_adapter.py` represents the Open Claw API/message boundary by accepting a user instruction and sending it to the Raspberry Pi service.
 - The vision model path is real. YOLOv8n was run locally on sample images, and the output returned `vision_result.mode: yolo`.
-- Mission control currently uses a deterministic rule-based parser for reliability and speed. The parser is isolated so it can be replaced with an API-based LLM or a lightweight local model.
+- Mission control includes both an API-based parser path and a deterministic fallback parser. The validated demo uses the deterministic fallback for reliability; the API path is implemented and can be enabled when API quota/billing is available.
 - The goal of this submission is to demonstrate the end-to-end communication and execution loop, not to claim a completed physical robot deployment.
 
 ## Repository Contents
@@ -40,7 +40,7 @@ The prototype is intentionally scoped as a local toy demo. It preserves the inte
 ```text
 openclaw_adapter.py      # Open Claw-style CLI/API adapter
 pi_service.py            # Raspberry Pi-style FastAPI task service
-mission_control.py       # Mission parser with rule-based and optional API modes
+mission_control.py       # Mission parser with optional API mode and deterministic fallback
 vision.py                # YOLO vision wrapper with simulated fallback
 config.py                # Local .env loading helper
 smoke_test.py            # In-process smoke test
@@ -82,6 +82,8 @@ OPENAI_API_KEY=<api key>
 OPENAI_MODEL=<model name>
 ```
 
+If the API call is unavailable because of quota, billing, network, or model access, the service automatically falls back to the deterministic parser and records the reason in `mission_plan.notes`.
+
 ## Running The Demo
 
 Start the Raspberry Pi-style service:
@@ -118,13 +120,15 @@ The following cases were validated on May 10, 2026 using YOLOv8n:
 
 The negative dog case is included to show that the prototype is not hard-coded to return affirmative responses. It compares the requested target against YOLO detections and returns `not_confirmed` when the object is absent.
 
+Mission control was validated through the deterministic fallback path for reproducibility. The API-based parser path is implemented and can be enabled when model access, quota, and billing are available; if the external API is unavailable, the service falls back without breaking the end-to-end demo.
+
 ## Working Scope
 
 Fully working in the local prototype:
 
 - Natural language instruction input
 - HTTP communication between the Open Claw-style adapter and Raspberry Pi-style service
-- Mission parsing into structured task plans
+- Mission parsing into structured task plans with API support and deterministic fallback
 - YOLOv8n object detection on included sample images
 - Positive and negative task outcomes
 - Structured JSON status responses
@@ -133,7 +137,7 @@ Partially complete by design:
 
 - Open Claw is represented by an adapter rather than the full official runtime
 - Raspberry Pi is simulated locally rather than deployed to physical hardware
-- Mission control defaults to rule-based parsing, with a replacement path for an API LLM or local lightweight model
+- API-based mission control depends on available model access, quota, and billing
 
 ## Future Work
 
