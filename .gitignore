@@ -1,0 +1,13 @@
+.venv/
+.ultralytics/
+__pycache__/
+*.py[cod]
+.env
+.ipynb_checkpoints/
+logs/*
+!logs/.gitkeep
+*.pt
+*.onnx
+*.engine
+~$*.docx
+Level_3_AI_Take_Home_Assignment.docx
