@@ -24,7 +24,7 @@ The prototype is intentionally scoped as a local toy demo. It preserves the inte
 | Open Claw boundary | `openclaw_adapter.py` | Accepts a natural language instruction and sends it to the Raspberry Pi service over HTTP |
 | Raspberry Pi service | `pi_service.py` | FastAPI service that receives tasks, invokes mission control, runs vision, and returns status |
 | Mission control | `mission_control.py` | Converts natural language into structured actions such as `detect_object/person` |
-| Vision model | `vision.py` | Runs YOLOv8n through Ultralytics when an image is provided |
+| Vision model | `vision.py` | Runs YOLOv8n through Ultralytics and saves annotated detection images when an image is provided |
 | Demo notebook | `demo_notebook.ipynb` | Notebook wrapper for walkthroughs, screenshots, and quick validation |
 
 ## Prototype Assumptions
@@ -51,6 +51,7 @@ requirements-vision.txt  # Optional YOLO dependencies
 requirements-api.txt     # Optional OpenAI-compatible API dependency
 .env.example             # Example runtime configuration
 sample_images/           # Included sample images for YOLO validation
+outputs/                 # Generated annotated YOLO images
 ```
 
 ## Setup
@@ -103,7 +104,7 @@ python openclaw_adapter.py "Check whether there is a dog in the image" --image s
 The service returns a JSON response containing:
 
 - `mission_plan`: the structured interpretation of the natural language instruction
-- `vision_result`: detected objects, counts, confidence scores, and model mode
+- `vision_result`: detected objects, counts, confidence scores, model mode, and `annotated_image` path when YOLO runs
 - `success` / `status`: whether the requested task was confirmed
 - `outcome`: a readable task result
 
@@ -130,6 +131,7 @@ Fully working in the local prototype:
 - HTTP communication between the Open Claw-style adapter and Raspberry Pi-style service
 - Mission parsing into structured task plans with API support and deterministic fallback
 - YOLOv8n object detection on included sample images
+- Annotated YOLO output images with bounding boxes saved under `outputs/`
 - Positive and negative task outcomes
 - Structured JSON status responses
 

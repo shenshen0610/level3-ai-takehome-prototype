@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -18,6 +19,7 @@ load_local_env()
 class VisionResult:
     mode: str
     image: str | None
+    annotated_image: str | None
     objects: list[dict[str, Any]]
     found_target: bool
     notes: list[str]
@@ -81,14 +83,43 @@ def _run_yolo(target: str, image: Path) -> VisionResult:
         for label, count in sorted(counts.items())
     ]
     found = target in counts if target and target != "object" else bool(objects)
+    notes = [f"Ran YOLO model: {model_name}"]
+    annotated_image = None
+    try:
+        annotated_image = _save_annotated_image(image, results, target)
+        if annotated_image:
+            notes.append(f"Saved annotated image: {annotated_image}")
+    except Exception as exc:
+        notes.append(f"Could not save annotated image: {exc}")
 
     return VisionResult(
         mode="yolo",
         image=str(image),
+        annotated_image=annotated_image,
         objects=objects,
         found_target=found,
-        notes=[f"Ran YOLO model: {model_name}"],
+        notes=notes,
     )
+
+
+def _save_annotated_image(image: Path, results: Any, target: str) -> str | None:
+    if not results:
+        return None
+
+    from PIL import Image
+
+    output_dir = Path(os.getenv("ANNOTATED_OUTPUT_DIR", "outputs"))
+    output_dir.mkdir(exist_ok=True)
+
+    safe_target = re.sub(r"[^A-Za-z0-9_-]+", "_", target or "objects").strip("_")
+    safe_target = safe_target or "objects"
+    output_path = output_dir / f"{image.stem}_{safe_target}_annotated.jpg"
+
+    plotted = results[0].plot()
+    if getattr(plotted, "ndim", 0) == 3 and plotted.shape[2] == 3:
+        plotted = plotted[:, :, ::-1]
+    Image.fromarray(plotted).save(output_path, quality=92)
+    return str(output_path)
 
 
 def _simulate_vision(
@@ -102,6 +133,7 @@ def _simulate_vision(
     return VisionResult(
         mode="simulated_vision",
         image=image_path,
+        annotated_image=None,
         objects=objects,
         found_target=found_target,
         notes=[
